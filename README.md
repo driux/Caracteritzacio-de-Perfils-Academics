@@ -1,4 +1,4 @@
-# Characterization of Academic Profiles
+# Characterització de Perfils Acadèmics
 
 Aquest estudi busca examinar els diferents criteris que determinen el rendiment escolar del jovent a l'institut, en base a l’anàlisi de múltiples factors.
 
