@@ -1,1 +1,1 @@
-# Characterization-of-Academic-Profiles
+# Characterization of Academic Profiles
