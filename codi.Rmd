@@ -1,0 +1,1102 @@
+---
+title: "Codi Projecte"
+author: "Marina Rosell, Patricia Cabot i Pau Lozano"
+date: "24/4/2020"
+output: html_document
+---
+
+## PROCÉS D'EXPLORACIÓ“ DE LES DADES
+
+### 1. PRE-PROCESSAMENT
+
+```{r}
+data_mat=read.table("student-mat.csv",sep=";",header=TRUE)
+data_por=read.table("student-por.csv",sep=";",header=TRUE)
+
+#summary(data_mat)
+dim(data_mat)
+#summary(data_por)
+dim(data_por)
+```
+
+Creem dues variables amb les notes finals G3 de cada assignatura. 
+```{r}
+notes.num_mat <- data_mat$G3
+notes.num_por <- data_por$G3
+```
+
+Creem dues variables amb les notes finals G3 de cada assignatura categoritzades, en grups de 5. 
+```{r}
+notes.cat_mat = cut(notes.num_mat, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+notes.cat_por = cut(notes.num_por, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+
+levels(notes.cat_mat)
+```
+
+Creem dues variables amb les notes finals G3 de cada assignatura binaritzades, en aprovats i no aprovats. 
+```{r}
+notes.bin_mat = cut(notes.num_mat, breaks = seq(0, 20, 10), include.lowest = TRUE)
+notes.bin_por = cut(notes.num_por, breaks = seq(0, 20, 10), include.lowest = TRUE)
+
+levels(notes.bin_mat)
+```
+
+```{r}
+par(mfrow=c(2,3))
+
+hist(notes.num_mat, 21, xlab = "Notes finals de matem?tiques", main="")
+barplot(table(notes.cat_mat), xlab = "Notes finals de matem?tiques en 4 nivells")
+barplot(table(notes.bin_mat), xlab = "Notes finals de matem?tiques binaritzades")
+
+hist(notes.num_por, 21, xlab = "Notes finals de portugu?s", main="")
+barplot(table(notes.cat_por), xlab = "Notes finals de portugu?s en 4 nivells")
+barplot(table(notes.bin_por), xlab = "Notes finals de portugu?s binaritzades")
+```
+
+Eliminem de la base de dades original la variable resposta G3. 
+```{r}
+data_mat$G3 <- NULL
+data_por$G3 <- NULL
+```
+
+Descarreguem els dos datasets que ja havíem creat amb un procés de one-hot encoding i ens havíem guardat. 
+```{r}
+data_bin.mat <- read.csv("data_bin.mat.csv")
+data_bin.por <- read.csv("data_bin.por.csv")
+data_bin.mat$X <- NULL
+data_bin.por$X <- NULL
+```
+
+Creem dues bases de dades noves per cada assignatura, un amb les notes G1 i G2 agrupades en grups de 5 i en un altre binaritzades. 
+```{r}
+datacat_mat <- data_mat
+
+datacat_mat$G1 <- cut(datacat_mat$G1, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+datacat_mat$G2 <- cut(datacat_mat$G2, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+
+datacat_por <- data_por
+
+datacat_por$G1 <- cut(datacat_por$G1, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+datacat_por$G2 <- cut(datacat_por$G2, breaks = c(0,8,12,16,20), labels = c("0-7", "8-11", "12-15", "16-20"), include.lowest = TRUE)
+
+databin_mat <- data_mat
+
+databin_mat$G1 <- cut(databin_mat$G1, breaks = seq(0, 20, 10), include.lowest = TRUE)
+databin_mat$G2 <- cut(databin_mat$G2, breaks = seq(0, 20, 10), include.lowest = TRUE)
+
+databin_por <- data_por
+
+databin_por$G1 <- cut(databin_por$G1, breaks = seq(0, 20, 10), include.lowest = TRUE)
+databin_por$G2 <- cut(databin_por$G2, breaks = seq(0, 20, 10), include.lowest = TRUE)
+```
+
+### 2. EXTRACCIÓ“ I SELECCIÓ“ D'ATRIBUTS
+
+```{r}
+personal <- c("sex", "age", "health", "nursery")
+family <- c("famsize", "Pstatus", "Medu", "Fedu", "Fjob", "Mjob", "guardian", "famsup", "famrel")
+envir <- c("address", "traveltime", "internet")
+social <- c("activities", "romantic", "freetime", "goout", "Dalc", "Walc")
+school <- c("school", "reason", "schoolsup")
+student <- c("studytime", "failures", "higher", "absences", "paid")
+grades <- c("G1", "G2")
+```
+
+Fem una agrupació dels atributs per temes. 
+```{r}
+# Matemàtiques
+
+data_personal.mat <- subset(data_mat, select=personal)
+data_family.mat <- subset(data_mat, select=family)
+data_envir.mat <- subset(data_mat, select=envir)
+data_social.mat <- subset(data_mat, select=social)
+data_school.mat <- subset(data_mat, select=school)
+data_student.mat <- subset(data_mat, select=student)
+
+data_grades.mat <- subset(data_mat, select=grades)
+datacat_grades.mat <- subset(datacat_mat, select=grades)
+databin_grades.mat <- subset(databin_mat, select=grades)
+
+# Portugués
+
+data_personal.por <- subset(data_por, select=personal)
+data_family.por <- subset(data_por, select=family)
+data_envir.por <- subset(data_por, select=envir)
+data_social.por <- subset(data_por, select=social)
+data_school.por <- subset(data_por, select=school)
+data_student.por <- subset(data_por, select=student)
+
+data_grades.por <- subset(data_por, select=grades)
+datacat_grades.por <- subset(datacat_por, select=grades)
+databin_grades.por <- subset(databin_por, select=grades)
+```
+
+
+#### ANÀLISI DE COMPONENTS PRINCIPALS
+
+```{r}
+col.cat_mat <- rep("black", 4)
+col.cat_mat[notes.cat_mat == "0-7"] <- "purple"
+col.cat_mat[notes.cat_mat == "8-11"] <- "tomato"
+col.cat_mat[notes.cat_mat == "12-15"] <- "green"
+col.cat_mat[notes.cat_mat == "16-20"] <- "deepskyblue"
+
+col.bin_mat <- rep("black", 2)
+col.bin_mat[notes.bin_mat == "[0,10]"] <- "tomato"
+col.bin_mat[notes.bin_mat == "(10,20]"] <- "deepskyblue"
+
+col.cat_por <- rep("black", 4)
+col.cat_por[notes.cat_por == "0-7"] <- "purple"
+col.cat_por[notes.cat_por == "8-11"] <- "tomato"
+col.cat_por[notes.cat_por == "12-15"] <- "green"
+col.cat_por[notes.cat_por == "16-20"] <- "deepskyblue"
+
+col.bin_por <- rep("black", 2)
+col.bin_por[notes.bin_por == "[0,10]"] <- "tomato"
+col.bin_por[notes.bin_por == "(10,20]"] <- "deepskyblue"
+```
+
+```{r}
+acp.mat <- princomp(data_bin.mat, cor=TRUE)
+loadings_mat <- acp.mat$loadings
+
+acp.por <- princomp(data_bin.por, cor=TRUE)
+loadings_por <- acp.por$loadings
+
+par(mfrow=c(1,2))
+plot(acp.mat)
+plot(acp.por)
+```
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(acp.mat$scores[,1], acp.mat$scores[,2], col=col.cat_mat, xlab="Component principal 1", ylab="Component principal 2", main="Biplot de matemàtiques")
+legend("topleft", inset=0.02, legend = levels(notes.cat_mat), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+
+plot(acp.por$scores[,1], acp.por$scores[,2], col=col.cat_por, xlab="Component principal 1", ylab="Component principal 2", main="Biplot de portugués")
+legend("topleft", inset=0.02, legend = levels(notes.cat_por), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+```
+
+```{r}
+plot.acp <- function(scores, color, levels, loadings, topic, title){
+  plot(scores[,1], scores[,2], col=color, xlab="Component principal 1", ylab="Component principal 2", main=paste("Biplot de l'anàlisi de components principals",title), asp=1)
+  legend("topleft", inset=0.02, legend = levels, col = c("tomato","deepskyblue"), cex=0.8, pch = 19)
+  arrows(0,0,loadings[topic,1]*15, loadings[topic,2]*15)
+  text(loadings[topic,1]*15, loadings[topic,2]*15, labels=rownames(loadings[topic,]))
+}
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, personal, "Mat - Personal")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, personal, "Por - Personal")
+
+family_bin <- c("famsize", "Pstatus", "Medu", "Fedu", "famsup", "famrel", "g.father", "g.mother", "g.other")
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, family_bin, "Mat - Family")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, family_bin, "Por - Family")
+
+family_job <- c("M.at_home", "M.health", "M.other", "M.services", "M.teacher", "F.at_home", "F.health", "F.other", "F.services", "F.teacher")
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, family_job, "Mat - Family Job")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, family_job, "Por - Family Job")
+
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, envir, "Mat - Environment")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, envir, "Por - Environment")
+
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, social, "Mat - Social")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, social, "Por - Social")
+
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, student, "Mat - Student")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, student, "Por - Student")
+
+school_bin <- c("school", "r.course", "r.other", "r.reputation", "schoolsup")
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, school_bin, "Mat - School")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, school_bin, "Por - School")
+
+par(mfrow=c(1,2))
+plot.acp(acp.mat$scores, col.bin_mat, levels(notes.bin_mat), loadings_mat, grades, "Mat - Grades")
+plot.acp(acp.por$scores, col.bin_por, levels(notes.bin_por), loadings_por, grades, "Por - Grades")
+```
+
+#### ANÀLISI DISCRIMINANT LINEAL
+
+```{r}
+plot.mean <- function (prediccio, levels, col) 
+  {
+  m1 <- mean(subset(prediccio$x[,1], prediccio$class==levels))
+  m2 <- mean(subset(prediccio$x[,2], prediccio$class==levels))
+  points(m1, m2, pch=16, cex=1.5, col=col)
+  points(m1, m2, pch=1, cex=1.5, col="black")
+}
+```
+
+```{r}
+library("MASS")
+adl.reg_mat <- lda(notes.num_mat~., data=data_bin.mat)
+prediccio_reg.mat <- predict(adl.reg_mat)
+
+adl.cat_mat <- lda(notes.cat_mat~., data=data_bin.mat)
+prediccio_cat.mat <- predict(adl.cat_mat)
+
+adl.bin_mat <- lda(notes.bin_mat~., data=data_bin.mat)
+prediccio_bin.mat <- predict(adl.bin_mat)
+
+plot(prediccio_reg.mat$x[,1], prediccio_reg.mat$x[,2], col=col.cat_mat)
+legend("bottomleft", inset=0.02, legend = levels(notes.cat_mat), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+
+plot(prediccio_cat.mat$x[,1], prediccio_cat.mat$x[,2], col=col.cat_mat)
+legend("bottomleft", inset=0.02, legend = levels(notes.cat_mat), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+plot.mean (prediccio_cat.mat, levels(notes.cat_mat)[1], "purple")
+plot.mean (prediccio_cat.mat, levels(notes.cat_mat)[2], "tomato")
+plot.mean (prediccio_cat.mat, levels(notes.cat_mat)[3], "green")
+plot.mean (prediccio_cat.mat, levels(notes.cat_mat)[4], "deepskyblue")
+
+plot(prediccio_bin.mat$x[,1], col=col.bin_mat)
+legend("bottomleft", inset=0.02, legend = levels(notes.bin_mat), col = c("tomato","deepskyblue"), cex=0.8, pch = 19)
+
+  m1 <- mean(subset(prediccio_bin.mat$x[,1], prediccio_bin.mat$class==levels(notes.bin_mat)[1]))
+  m2 <- mean(subset(prediccio_bin.mat$x[,1], prediccio_bin.mat$class==levels(notes.bin_mat)[2]))
+  m3 <- mean(prediccio_bin.mat$x[,1])
+  abline(m1,0, cex=1.5, col="tomato")
+  abline(m2,0, cex=1.5, col="deepskyblue")
+  abline(m3,0, cex=1.5, col ="black")
+```
+
+```{r}
+adl.reg_por <- lda(notes.num_por~., data=data_bin.por)
+prediccio_reg.por <- predict(adl.reg_por)
+
+adl.cat_por <- lda(notes.cat_por~., data=data_bin.por)
+prediccio_cat.por <- predict(adl.cat_por)
+
+adl.bin_por <- lda(notes.bin_por~., data=data_bin.por)
+prediccio_bin.por <- predict(adl.bin_por)
+
+plot(prediccio_reg.por$x[,1], prediccio_reg.por$x[,2], col=col.cat_por)
+legend("bottomleft", inset=0.02, legend = levels(notes.cat_por), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+
+plot(prediccio_cat.por$x[,1], prediccio_cat.por$x[,2], col=col.cat_por)
+legend("bottomleft", inset=0.02, legend = levels(notes.cat_por), col = c("purple","tomato","green","deepskyblue"), cex=0.8, pch = 19)
+plot.mean (prediccio_cat.por, levels(notes.cat_por)[1], "purple")
+plot.mean (prediccio_cat.por, levels(notes.cat_por)[2], "tomato")
+plot.mean (prediccio_cat.por, levels(notes.cat_por)[3], "green")
+plot.mean (prediccio_cat.por, levels(notes.cat_por)[4], "deepskyblue")
+
+plot(prediccio_reg.por$x[,1], col=col.bin_por)
+legend("bottomleft", inset=0.02, legend = c(levels(notes.bin_por), "Mean"), col = c("tomato","deepskyblue", "black"), cex=0.8, pch = c(21,21, NA), lty=c(NA,NA,1))
+
+  m1 <- mean(subset(prediccio_bin.por$x[,1], prediccio_bin.por$class==levels(notes.bin_por)[1]))
+  m2 <- mean(subset(prediccio_bin.por$x[,1], prediccio_bin.por$class==levels(notes.bin_por)[2]))
+  m3 <- (m1+m2)/2
+  abline(m1,0, cex=1.5, col="tomato")
+  abline(m2,0, cex=1.5, col="deepskyblue")
+  abline(m3,0, cex=1.5, col ="black")
+```
+
+## RE-MOSTREIG I MODELITZACIÓ
+
+### RE-MOSTREIG
+
+```{r}
+set.seed(123)
+rand_mat <- as.array(sample(1:nrow(data_mat), nrow(data_mat), replace = FALSE))
+rand_mat.tr <- rand_mat[1:(nrow(data_mat)*3/4)]
+rand_mat.te <- rand_mat[((nrow(data_mat)*1/4) +1):nrow(data_mat)]
+```
+
+```{r}
+notes.bin_mat.tr <- notes.bin_mat[rand_mat.tr]
+notes.bin_mat.te <- notes.bin_mat[rand_mat.te]
+
+notes.cat_mat.tr <- notes.cat_mat[rand_mat.tr]
+notes.cat_mat.te <- notes.cat_mat[rand_mat.te]
+
+notes.num_mat.tr <- notes.num_mat[rand_mat.tr]
+notes.num_mat.te <- notes.num_mat[rand_mat.te]
+
+data_mat.tr <- data_mat[rand_mat.tr,]
+data_mat.te <- data_mat[rand_mat.te,]
+
+data_bin.mat.tr <- data_bin.mat[rand_mat.tr,]
+data_bin.mat.te <- data_bin.mat[rand_mat.te,]
+
+print("-> 2 grups")
+for(i in levels(notes.bin_mat)){
+  print(sum(notes.bin_mat.tr==i)/length(notes.bin_mat.tr)*100)
+  print(sum(notes.bin_mat.te==i)/length(notes.bin_mat.te)*100)
+}
+
+print("-> 4 grups")
+for(i in levels(notes.cat_mat)){
+  print(sum(notes.cat_mat.tr==i)/length(notes.cat_mat.tr)*100)
+  print(sum(notes.cat_mat.te==i)/length(notes.cat_mat.te)*100)
+}
+```
+
+```{r}
+rand_por <- as.array(sample(1:nrow(data_por), nrow(data_por), replace = FALSE))
+rand_por.tr <- rand_por[1:(nrow(data_por)*3/4)]
+rand_por.te <- rand_por[((nrow(data_por)*1/4) +1):nrow(data_por)]
+
+notes.bin_por.tr <- notes.bin_por[rand_por.tr]
+notes.bin_por.te <- notes.bin_por[rand_por.te]
+
+notes.cat_por.tr <- notes.cat_por[rand_por.tr]
+notes.cat_por.te <- notes.cat_por[rand_por.te]
+
+notes.num_por.tr <- notes.num_por[rand_por.tr]
+notes.num_por.te <- notes.num_por[rand_por.te]
+
+data_por.tr <- data_por[rand_por.tr,]
+data_por.te <- data_por[rand_por.te,]
+
+data_bin.por.tr <- data_bin.por[rand_por.tr,]
+data_bin.por.te <- data_bin.por[rand_por.te,]
+
+print("-> 2 grups")
+for(i in levels(notes.bin_por)){
+  print(sum(notes.bin_por.tr==i)/length(notes.bin_por.tr)*100)
+  print(sum(notes.bin_por.te==i)/length(notes.bin_por.te)*100)
+}
+
+print("-> 4 grups")
+for(i in levels(notes.cat_por)){
+  print(sum(notes.cat_por.tr==i)/length(notes.cat_por.tr)*100)
+  print(sum(notes.cat_por.te==i)/length(notes.cat_por.te)*100)
+}
+```
+
+### MODELITZACIÃ“
+
+```{r}
+#install.packages("Metrics")
+library(Metrics)
+#install.packages("caret")
+library(caret)
+```
+
+```{r}
+compute_accuracy <- function(pred, real, type){
+  if (type=="reg"){
+    err <- mse(real, as.numeric(paste(pred)))
+    return(err)
+  } else {
+    t <- confusionMatrix(pred, real)$table
+    acc <- sum(diag(prop.table(t)))*100
+    return(acc)
+  }
+}
+```
+
+#### GLM
+
+```{r}
+#STEP.reg_mat <- step(glm(notes.num_mat.tr~., data=data_mat.tr, family=gaussian))
+#STEP.reg_mat$formula
+NOMS_reg_mat <- c("age", "guardian", "activities", "higher", "famrel", "absences", "G1", "G2")
+mod.reg_mat <- glm(notes.num_mat.tr~., data=data_mat.tr[,NOMS_reg_mat], family=gaussian)
+
+#STEP.bin_mat <- step(glm(notes.bin_mat.tr~., data=data_mat.tr, family=binomial))
+#STEP.bin_mat$formula
+NOMS_bin_mat <- c("school", "address", "famsize", "Fjob", "traveltime", "studytime", "schoolsup", "paid", "activities", "nursery", "higher", "internet", "romantic", "freetime", "Walc", "health", "G1", "G2")
+mod.bin_mat <- glm(notes.bin_mat.tr~., data=data_mat.tr[,NOMS_bin_mat], family=binomial)
+
+#STEP.reg_por <- step(glm(notes.num_por.tr~., data=data_por.tr, family=gaussian))
+#STEP.reg_por$formula
+NOMS_reg_por <- c("school", "failures", "schoolsup", "freetime", "Dalc", "absences", "G1", "G2")
+mod.reg_por <- glm(notes.num_por.tr~., data=data_por.tr[,NOMS_reg_por], family=gaussian)
+
+#STEP.bin_por <- step(glm(notes.bin_por.tr~., data=data_por.tr, family=binomial))
+#STEP.bin_por$formula
+NOMS_bin_por <- c("school", "Fjob", "reason", "traveltime", "failures", "nursery", "G1", "G2")
+mod.bin_por <- glm(notes.bin_por.tr~., data=data_por.tr[,NOMS_bin_por], family=binomial)
+
+print("-> MATEMÃ€TIQUES")
+
+pred.glm.reg_mat <- round(predict(mod.reg_mat, newdata=data_mat.tr, type="response"))
+compute_accuracy(pred.glm.reg_mat, notes.num_mat.tr, "reg")
+pred.glm.bin_mat <- factor(round(predict(mod.bin_mat, newdata=data_mat.tr, type="response")))
+compute_accuracy(pred.glm.bin_mat, factor(as.numeric(notes.bin_mat.tr)-1), "bin")
+
+print("-> PORTUGUÃˆS")
+
+pred.glm.reg_por <- round(predict(mod.reg_por, newdata=data_por.tr, type="response"))
+compute_accuracy(pred.glm.reg_por, notes.num_por.tr, "reg")
+pred.glm.bin_por <- factor(round(predict(mod.bin_por, newdata=data_por.tr, type="response")))
+compute_accuracy(pred.glm.bin_por, factor(as.numeric(notes.bin_por.tr)-1), "bin")
+```
+
+#### Predicció amb LDA
+
+```{r}
+library("MASS")
+```
+
+```{r}
+adl.reg_mat <- lda(notes.num_mat.tr~., data=data_bin.mat.tr)
+pred.reg_mat <- predict(adl.reg_mat, newdata=data_bin.mat.tr)
+
+adl.cat_mat <- lda(notes.cat_mat.tr~., data=data_bin.mat.tr)
+pred.cat_mat <- predict(adl.cat_mat, newdata=data_bin.mat.tr)
+
+adl.bin_mat <- lda(notes.bin_mat.tr~., data=data_bin.mat.tr)
+pred.bin_mat <- predict(adl.bin_mat, newdata=data_bin.mat.tr)
+
+adl.reg_por <- lda(notes.num_por.tr~., data=data_bin.por.tr)
+pred.reg_por <- predict(adl.reg_por, newdata=data_bin.por.tr)
+
+adl.cat_por <- lda(notes.cat_por.tr~., data=data_bin.por.tr)
+pred.cat_por <- predict(adl.cat_por, newdata=data_bin.por.tr)
+
+adl.bin_por <- lda(notes.bin_por.tr~., data=data_bin.por.tr)
+pred.bin_por <- predict(adl.bin_por, newdata=data_bin.por.tr)
+
+print("MATEMÀTIQUES")
+
+compute_accuracy(pred.reg_mat$class, notes.num_mat.tr, "reg")
+compute_accuracy(pred.cat_mat$class, notes.cat_mat.tr, "cat")
+compute_accuracy(pred.bin_mat$class, notes.bin_mat.tr, "bin")
+
+print("PORTUGUÉS")
+
+compute_accuracy(pred.reg_por$class, notes.num_por.tr, "reg")
+compute_accuracy(pred.cat_por$class, notes.cat_por.tr, "cat")
+compute_accuracy(pred.bin_por$class, notes.bin_por.tr, "bin")
+```
+
+#### Predicció amb Naive Bayes
+
+```{r}
+library (e1071)
+```
+
+```{r}
+model_reg.mat <- naiveBayes(factor(notes.num_mat.tr) ~ ., data=data_mat.tr)
+pred_nb_reg.mat <- predict(model_reg.mat, newdata= data_mat.tr)
+
+model_cat.mat <- naiveBayes(notes.cat_mat.tr ~ ., data = data_mat.tr)
+pred_nb_cat.mat <- predict(model_cat.mat, newdata = data_mat.tr)
+
+model_bin.mat <- naiveBayes(notes.bin_mat.tr ~ ., data = data_mat.tr)
+pred_nb_bin.mat <- predict(model_bin.mat, newdata = data_mat.tr)
+
+model_reg.por <- naiveBayes(factor(notes.num_por.tr) ~ ., data=data_por.tr)
+pred_nb_reg.por <- predict(model_reg.por, newdata= data_por.tr)
+
+model_cat.por <- naiveBayes(notes.cat_por.tr ~ ., data = data_por.tr)
+pred_nb_cat.por <- predict(model_cat.por, newdata = data_por.tr)
+
+model_bin.por <- naiveBayes(notes.bin_por.tr ~ ., data = data_por.tr)
+pred_nb_bin.por <- predict(model_bin.por, newdata = data_por.tr)
+
+print("-> MATEMÀTIQUES")
+
+compute_accuracy(pred_nb_reg.mat, notes.num_mat.tr, "reg")
+compute_accuracy(pred_nb_cat.mat, notes.cat_mat.tr, "cat")
+compute_accuracy(pred_nb_bin.mat, notes.bin_mat.tr, "bin")
+
+print("-> PORTUGUÉS")
+
+compute_accuracy(pred_nb_reg.por, notes.num_por.tr, "reg")
+compute_accuracy(pred_nb_cat.por, notes.cat_por.tr, "cat")
+compute_accuracy(pred_nb_bin.por, notes.bin_por.tr, "bin")
+```
+
+#### K-NEAREST NEIGHBOURS
+
+```{r}
+#install.packages("FNN")
+library(FNN)
+```
+
+```{r}
+num_k <- function(train, test, res_train, res_val, type){
+  nk <- 1:10
+  kacc <- c()
+  for (k in nk){
+    mod_knn <- knn(train, test, res_train, k=k)
+    kacc <- c(kacc, compute_accuracy(mod_knn, res_val, type))
+  }
+  if (type=="reg"){
+    return(list("num"=nk[which.min(kacc)], "acc"=min(kacc), "table"=kacc))
+  } else {
+    return(list("num"=nk[which.max(kacc)], "acc"=max(kacc), "table"=kacc))
+  }
+}
+
+nk_bin.mat <- num_k(data_bin.mat.tr, data_bin.mat.te, notes.bin_mat.tr, notes.bin_mat.te, "bin")
+nk_cat.mat <- num_k(data_bin.mat.tr, data_bin.mat.te, notes.cat_mat.tr, notes.cat_mat.te, "cat")
+nk_reg.mat <- num_k(data_bin.mat.tr, data_bin.mat.te, notes.num_mat.tr, notes.num_mat.te, "reg")
+
+nk_bin.por <- num_k(data_bin.por.tr, data_bin.por.te, notes.bin_por.tr, notes.bin_por.te, "bin")
+nk_cat.por <- num_k(data_bin.por.tr, data_bin.por.te, notes.cat_por.tr, notes.cat_por.te, "cat")
+nk_reg.por <- num_k(data_bin.por.tr, data_bin.por.te, notes.num_por.tr, notes.num_por.te, "reg")
+
+print("")
+
+print("-> MATEMÀTIQUES")
+
+nk_reg.mat$acc
+nk_cat.mat$acc
+nk_bin.mat$acc
+
+print("-> PORTUGUÉS")
+
+nk_reg.por$acc
+nk_cat.por$acc
+nk_bin.por$acc
+
+```
+
+```{r}
+mod.knn_num.mat <- knn(data_bin.mat.tr, data_bin.mat.tr, notes.num_mat.tr, k=1)
+mod.knn_cat.mat <- knn(data_bin.mat.tr, data_bin.mat.tr, notes.cat_mat.tr, k=1)
+mod.knn_bin.mat <- knn(data_bin.mat.tr, data_bin.mat.tr, notes.bin_mat.tr, k=1)
+
+mod.knn_num.por <- knn(data_bin.por.tr, data_bin.por.tr, notes.num_por.tr, k=1)
+mod.knn_cat.por <- knn(data_bin.por.tr, data_bin.por.tr, notes.cat_por.tr, k=1)
+mod.knn_bin.por <- knn(data_bin.por.tr, data_bin.por.tr, notes.bin_por.tr, k=1)
+
+compute_accuracy(mod.knn_num.mat, notes.num_mat.tr, "reg")
+compute_accuracy(mod.knn_bin.mat, notes.bin_mat.tr, "cat")
+compute_accuracy(mod.knn_cat.mat, notes.cat_mat.tr, "bin")
+
+compute_accuracy(mod.knn_num.por, notes.num_por.tr, "reg")
+compute_accuracy(mod.knn_bin.por, notes.bin_por.tr, "cat")
+compute_accuracy(mod.knn_cat.por, notes.cat_por.tr, "bin")
+```
+
+#### NEURONAL NETWORK
+
+```{r}
+library(caret)
+library(nnet)
+```
+
+Realitzarem Cross-Validation 10x10 per trobar el nombre òptim de capes ocultes i regularització
+a) En primer lloc, explorarem diferents nombres de neurones a una capa oculata sense regularització
+b) Fixarem un gran nombre de neurones ocultes a una capa oculta i explorarem diferents valors de regularitzaciÃ³
+
+Especifiquem 10x10 CV:
+```{r}
+trc <- trainControl (method="repeatedcv", number=10, repeats=10)
+```
+
+a) Nombre de neurones. 
+```{r}
+sizes <- 2*seq(1,10,by=1)
+```
+
+Realitzem cross-validation sobre train per obtenir els millors paràmetres:
+```{r}
+# MATEMÀTIQUES
+#modCV_sizes_bin.mat <- train (data_bin.mat.tr, notes.bin_mat.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+# Results
+#modCV_sizes_bin.mat$results
+# Best model found:
+#modCV_sizes_bin.mat$bestTune
+
+#modCV_sizes_cat.mat <- train (data_bin.mat.tr, notes.cat_mat.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+# Results
+#modCV_sizes_cat.mat$results
+# Best model found:
+#modCV_sizes_cat.mat$bestTune
+
+#modCV_sizes_num.mat <- train (data_bin.mat.tr, notes.num_mat.tr, linout=TRUE, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+#modCV_sizes_num.mat$results
+# Best model found:
+#modCV_sizes_num.mat$bestTune
+
+# PORTUGUÉS
+#modCV_sizes_bin.por <- train (data_bin.por.tr, notes.bin_por.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+# Results
+#modCV_sizes_bin.por$results
+# Best model found:
+#modCV_sizes_bin.por$bestTune
+
+#modCV_sizes_cat.por <- train (data_bin.por.tr, notes.cat_por.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+# Results
+#modCV_sizes_cat.por$results
+# Best model found:
+#modCV_sizes_cat.por$bestTune
+
+#modCV_sizes_num.por <- train (data_bin.por.tr, notes.num_por.tr, linout=TRUE, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=sizes,.decay=0), trControl=trc)
+# Results
+#modCV_sizes_num.por$results
+# Best model found:
+#modCV_sizes_num.por$bestTune
+```
+
+b) Paràmetre de regularització. 
+```{r}
+decays <- 10^seq(-2, 0, by=0.2)
+```
+
+Realitzem cross-validation sobre train per obtenir el millor paràmetre de regularització amb el nombre de neurones màxim (20):
+```{r}
+# MATEMÀTIQUES
+#modCV_decay_bin.mat <- train (data_bin.mat.tr, notes.bin_mat.tr, method='nnet', maxit = 500, trace = FALSE, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_bin.mat$results
+# Best model found
+#modCV_decay_bin.mat$bestTune
+
+#modCV_decay_cat.mat <- train (data_bin.mat.tr, notes.cat_mat.tr, method='nnet', maxit = 500, MaxNWts = 20000, trace = FALSE, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_cat.mat$results
+# Best model found
+#modCV_decay_cat.mat$bestTune
+
+#modCV_decay_num.mat <- train (data_bin.mat.tr, notes.num_mat.tr, method='nnet', maxit = 500, trace = FALSE,linout=TRUE, MaxNWts = 20000, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_num.mat$results
+# Best model found
+#modCV_decay_num.mat$bestTune
+
+# PORTUGUÉS
+#modCV_decay_bin.por <- train (data_bin.por.tr, notes.bin_por.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_bin.por$results
+# Best model found
+#modCV_decay_bin.por$bestTune
+
+#modCV_decay_cat.por <- train (data_bin.por.tr, notes.cat_por.tr, method='nnet', maxit = 500, trace = FALSE, MaxNWts = 20000, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_cat.por$results
+# Best model found
+#modCV_decay_cat.por$bestTune
+
+#modCV_decay_num.por <- train (data_bin.por.tr, notes.num_por.tr, method='nnet', maxit = 500, trace = FALSE, linout=TRUE, MaxNWts = 20000, tuneGrid = expand.grid(.size=20,.decay=decays), trControl=trc)
+# Results
+#modCV_decay_num.por$results
+# Best model found
+#modCV_decay_num.por$bestTune
+```
+
+Seleccionem el millor model per cada sortida.
+```{r}
+# matemàtiques
+nnet_bin.mat <- nnet(notes.bin_mat.tr~., data=data_bin.mat.tr, size=20, decay=0.63, linout=FALSE, maxit=500)
+pred_bin.mat <- as.factor(round(predict (nnet_bin.mat, newdata=data_bin.mat.tr)))
+
+nnet_cat.mat <- nnet(notes.cat_mat.tr~., data=data_bin.mat.tr, size=20, decay=0.025, MaxNWts=2000, maxit=500)
+pred_cat.mat <- as.factor(max.col(round(predict (nnet_cat.mat, newdata=data_bin.mat.tr))))
+
+nnet_num.mat <- nnet(notes.num_mat.tr~., data=data_bin.mat.tr, size=20, decay=0.63, MaxNWts=2000, linout=TRUE, maxit=500)
+pred_num.mat <- round(predict (nnet_num.mat, newdata=data_bin.mat.tr))
+
+# portugués
+nnet_bin.por <- nnet(notes.bin_por.tr~., data=data_bin.por.tr, size=20, decay=0.63, maxit=500)
+pred_bin.por <- as.factor(round(predict (nnet_bin.por, newdata=data_bin.por.tr, type="raw")))
+
+nnet_cat.por <- nnet(notes.cat_por.tr~., data=data_bin.por.tr, size=20, decay=0.1, MaxNWts=2000, maxit=500)
+pred_cat.por <- as.factor(max.col(round(predict (nnet_cat.por, newdata=data_bin.por.tr))))
+
+nnet_num.por <- nnet(notes.num_por.tr~., data=data_bin.por.tr, size=20, decay=0.63, MaxNWts=2000, linout=TRUE, maxit=500)
+pred_num.por <- round(predict (nnet_num.por, newdata=data_bin.por.tr))
+```
+
+```{r}
+print("-> Matematiques")
+compute_accuracy(pred_num.mat, notes.num_mat.tr, "reg")
+compute_accuracy(pred_cat.mat, factor(as.numeric(notes.cat_mat.tr)), "cat")
+compute_accuracy(pred_bin.mat, factor(as.numeric(notes.bin_mat.tr)-1), "bin")
+
+print("-> Portugués")
+compute_accuracy(pred_num.por, notes.num_por.tr, "reg")
+compute_accuracy(pred_cat.por, factor(as.numeric(notes.cat_por.tr)), "cat")
+compute_accuracy(pred_bin.por, factor(as.numeric(notes.bin_por.tr)-1), "bin")
+```
+
+#### RANDOM FOREST
+
+```{r}
+library(randomForest)
+```
+
+```{r}
+num_trees <- function(data, target){
+  ntrees <- round(2^seq(1,10))
+  rf.results <- matrix (rep(0,2*length(ntrees)), nrow=length(ntrees))
+  colnames (rf.results) <- c("ntrees", "OOB")
+  rf.results[,"ntrees"] <- ntrees
+  rf.results[,"OOB"] <- 0
+  
+  ii <- 1
+  for (nt in ntrees){
+    
+    # build forest
+    model.rf <- randomForest(target ~ ., data=data, ntree=nt, proximity=FALSE, spam=500)
+    
+    # get the OOB and store it appropriately
+    rf.results[ii, "OOB"] <- model.rf$err.rate[nt,1]
+    ii <- ii+1
+  }
+  
+  lowest.OOB.accor <- as.integer(which.min(rf.results[,"OOB"]))
+  return(list("num" = rf.results[lowest.OOB.accor,"ntrees"], "table" = rf.results))
+}
+```
+
+```{r}
+
+ntrees_bin.mat <- num_trees(data_mat.tr, notes.bin_mat.tr)
+ntrees_cat.mat <- num_trees(data_mat.tr, notes.cat_mat.tr)
+ntrees_num.mat <- num_trees(data_mat.tr, factor(notes.num_mat.tr))
+
+ntrees_bin.por <- num_trees(data_por.tr, notes.bin_por.tr)
+ntrees_cat.por <- num_trees(data_por.tr, notes.cat_por.tr)
+ntrees_num.por <- num_trees(data_por.tr, factor(notes.num_por.tr))
+```
+
+Nombre d'arbres selecciont:
+```{r}
+ntrees_bin.mat$num <- 256
+ntrees_cat.mat$num <- 1024
+ntrees_num.mat$num <- 512
+ntrees_bin.por$num <- 1024
+ntrees_cat.por$num <- 64
+ntrees_num.por$num <- 512
+```
+
+```{r}
+mod.rf_bin.mat <- randomForest(notes.bin_mat.tr ~ ., data=data_mat.tr, ntree=ntrees_bin.mat$num, proximity=FALSE, importance=TRUE)
+mod.rf_cat.mat <- randomForest(notes.cat_mat.tr ~ ., data=data_mat.tr, ntree=ntrees_cat.mat$num, proximity=FALSE, importance=TRUE)
+mod.rf_num.mat <- randomForest(notes.num_mat.tr ~ ., data=data_mat.tr, ntree=ntrees_num.mat$num, proximity=FALSE, importance=TRUE)
+
+mod.rf_bin.por <- randomForest(notes.bin_por.tr ~ ., data=data_por.tr, ntree=ntrees_bin.por$num, proximity=FALSE, importance=TRUE)
+mod.rf_cat.por <- randomForest(notes.cat_por.tr ~ ., data=data_por.tr, ntree=ntrees_cat.por$num, proximity=FALSE, importance=TRUE)
+mod.rf_num.por <- randomForest(notes.num_por.tr ~ ., data=data_por.tr, ntree=ntrees_num.por$num, proximity=FALSE, importance=TRUE)
+
+pred_bin.mat <- as.factor(predict (mod.rf_bin.mat, newdata=data_mat.tr, type="response"))
+pred_cat.mat <- as.factor(predict (mod.rf_cat.mat, newdata=data_mat.tr, type="response"))
+pred_num.mat <- as.factor(predict (mod.rf_num.mat, newdata=data_mat.tr, type="response"))
+
+pred_bin.por <- as.factor(predict (mod.rf_bin.por, newdata=data_por.tr, type="response"))
+pred_cat.por <- as.factor(predict (mod.rf_cat.por, newdata=data_por.tr, type="response"))
+pred_num.por <- as.factor(predict (mod.rf_num.por, newdata=data_por.tr, type="response"))
+
+print("-> Matematiques")
+
+compute_accuracy(pred_num.mat, notes.num_mat.tr, "reg")
+compute_accuracy(pred_cat.mat, notes.cat_mat.tr, "cat")
+compute_accuracy(pred_bin.mat, notes.bin_mat.tr, "bin")
+
+print("-> Portugués")
+compute_accuracy(pred_num.por, notes.num_por.tr, "reg")
+compute_accuracy(pred_cat.por, notes.cat_por.tr, "cat")
+compute_accuracy(pred_bin.por, notes.bin_por.tr, "bin")
+```
+
+### CROSS-VALIDATION
+
+```{r}
+mod_GLM <- function(data_train, data_val, res_train, res_val, fam, type){
+  mod <- glm(res_train ~ ., data=data_train, family=fam)
+  pred <- round(predict(mod, newdata=data_val, type="response"))
+  if (type=="bin"){
+    pred <- factor(pred)
+    res_val <- factor(as.numeric(res_val)-1)
+  }
+  acc <- compute_accuracy(pred, res_val, type)
+  return (acc)
+}
+```
+
+```{r}
+mod_LDA <- function(data_train, data_val, res_train, res_val, type){
+  lda <- lda(res_train ~ ., data=data_train)
+  pred <- predict(lda, newdata=data_val)
+  
+  acc <- compute_accuracy(pred$class, res_val, type)
+  return (acc)
+}
+```
+
+```{r}
+mod_NB <- function(data_train, data_val, res_train, res_val, type){
+  NB <- naiveBayes(factor(res_train) ~ ., data=data_train)
+  pred <- predict(NB, newdata=data_val)
+  
+  acc <- compute_accuracy(pred, res_val, type)
+  return (acc)
+}
+```
+
+```{r}
+mod_RF <- function(data_train, data_val, res_train, res_val, ntrees, type){
+  rf <- randomForest(res_train ~ ., data=data_train, ntree=ntrees, proximity=FALSE)
+  pred <- as.factor(predict (rf, newdata=data_val, type="response"))
+  
+  acc <- compute_accuracy(pred, res_val, type)
+  return (acc)
+}
+```
+
+```{r}
+mod_KNN <- function(data_train, data_val, res_train, res_val, nk, type){
+  pred_knn <- knn(data_train, data_val, res_train, k=nk)
+  
+  acc <- compute_accuracy(pred_knn, res_val, type)
+  return(acc)
+}
+```
+
+
+```{r}
+cross_validation <- function(data, data_bin, notes_num, notes_cat, notes_bin, NOMS_reg, NOMS_bin, ntrees_bin, ntrees_cat, ntrees_num, nk_bin, nk_cat, nk_num, assignatura){
+  GLM_acc_num <- c()
+  LDA_acc_num <- c()
+  NB_acc_num <- c()
+  RF_acc_num <- c()
+  KNN_acc_num <- c()
+  
+  LDA_acc_cat <- c()
+  NB_acc_cat <- c()
+  RF_acc_cat <- c()
+  KNN_acc_cat <- c()
+  
+  GLM_acc_bin <- c()
+  LDA_acc_bin <- c()
+  NB_acc_bin <- c()
+  RF_acc_bin <- c()
+  KNN_acc_bin <- c()
+  
+  for (i in 0:9){
+    
+    data_val_init <- (nrow(data)/10)*(i)+1
+    data_val_end <- data_val_init + nrow(data)/10
+    if(data_val_end > nrow(data)) data_val_end = nrow(data)
+    
+    data_training <- data[-c(data_val_init:data_val_end),]
+    data_validation <- data[data_val_init:data_val_end,]
+    
+    data_training_bin <- data_bin[-c(data_val_init:data_val_end),]
+    data_validation_bin <- data_bin[data_val_init:data_val_end,]
+    
+    res_val_num <- notes_num[data_val_init:data_val_end]
+    res_train_num <- notes_num[-c(data_val_init:data_val_end)]
+    
+    res_val_cat <- notes_cat[data_val_init:data_val_end]
+    res_train_cat <- notes_cat[-c(data_val_init:data_val_end)]
+    
+    res_val_bin <- notes_bin[data_val_init:data_val_end]
+    res_train_bin <- notes_bin[-c(data_val_init:data_val_end)]
+  
+    GLM_acc_num <- c(GLM_acc_num, mod_GLM(data_training[NOMS_reg], data_validation[NOMS_reg], res_train_num, res_val_num, "gaussian", "reg"))
+    LDA_acc_num <- c(LDA_acc_num, mod_LDA(data_training_bin, data_validation_bin, res_train_num, res_val_num, "reg"))
+    NB_acc_num <- c(NB_acc_num, mod_NB(data_training, data_validation, res_train_num, res_val_num, "reg"))
+    KNN_acc_num <- c(KNN_acc_num, mod_KNN(data_training_bin, data_validation_bin, res_train_num, res_val_num, nk_num, "reg"))
+    RF_acc_num <- c(RF_acc_num, mod_RF(data_training, data_validation, res_train_num, res_val_num, ntrees_num, "reg"))
+      
+    LDA_acc_cat <- c(LDA_acc_cat, mod_LDA(data_training_bin, data_validation_bin, res_train_cat, res_val_cat, "cat"))
+    NB_acc_cat <- c(NB_acc_cat, mod_NB(data_training, data_validation, res_train_cat, res_val_cat, "cat"))
+    KNN_acc_cat <- c(KNN_acc_cat, mod_KNN(data_training_bin, data_validation_bin, res_train_cat, res_val_cat, nk_cat, "cat"))
+    RF_acc_cat <- c(RF_acc_cat, mod_RF(data_training, data_validation, res_train_cat, res_val_cat, ntrees_cat, "cat"))
+    
+    GLM_acc_bin <- c(GLM_acc_bin, mod_GLM(data_training[NOMS_bin], data_validation[NOMS_bin], res_train_bin, res_val_bin, "binomial", "bin"))
+    LDA_acc_bin <- c(LDA_acc_bin, mod_LDA(data_training, data_validation, res_train_bin, res_val_bin, "bin"))
+    NB_acc_bin <- c(NB_acc_bin, mod_NB(data_training, data_validation, res_train_bin, res_val_bin, "bin"))
+    KNN_acc_bin <- c(KNN_acc_bin, mod_KNN(data_training_bin, data_validation_bin, res_train_bin, res_val_bin, nk_bin, "bin"))
+    RF_acc_bin <- c(RF_acc_bin, mod_RF(data_training, data_validation, res_train_bin, res_val_bin, ntrees_bin, "bin"))
+    
+  }
+  
+  boxplot(GLM_acc_num, LDA_acc_num, NB_acc_num, KNN_acc_num, RF_acc_num, names = c("GLM", "LDA", "Naive Bayes", "KNN", "Random Forest"), main=paste("Notes numÃ¨riques de", assignatura))
+  boxplot(LDA_acc_cat, NB_acc_cat, KNN_acc_cat, RF_acc_cat, names = c("LDA", "Naive Bayes", "KNN", "Random Forest"), main=paste("Notes en 4 categories de", assignatura))
+  boxplot(GLM_acc_bin, LDA_acc_bin, NB_acc_bin, KNN_acc_bin, RF_acc_bin, names = c("GLM", "LDA", "Naive Bayes", "KNN", "Random Forest"), main=paste("Notes en 2 categories de", assignatura))
+  
+  acc_matrix <- rbind(c(mean(GLM_acc_num), mean(LDA_acc_num), mean(NB_acc_num), mean(KNN_acc_num), mean(RF_acc_num)), c("-", mean(LDA_acc_cat), mean(NB_acc_cat), mean(KNN_acc_cat), mean(RF_acc_cat)), c(mean(GLM_acc_bin), mean(LDA_acc_bin), mean(NB_acc_bin), mean(KNN_acc_bin), mean(RF_acc_bin)))
+  colnames(acc_matrix) <- c("GLM", "LDA", "Naive Bayes", "KNN", "Random Forest")
+  rownames(acc_matrix) <- c("Num", "4 cat", "2 cat")
+  return(acc_matrix)
+}
+
+```
+
+```{r}
+acc_mat <- cross_validation(data_mat.tr, data_bin.mat.tr, notes.num_mat.tr, notes.cat_mat.tr, notes.bin_mat.tr, NOMS_reg_mat, NOMS_bin_mat, ntrees_bin.mat$num, ntrees_cat.mat$num, ntrees_num.mat$num, nk_bin.mat$num, nk_cat.mat$num, nk_reg.mat$num, "MatemÃ tiques")
+acc_por <- cross_validation(data_por.tr, data_bin.por.tr, notes.num_por.tr, notes.cat_por.tr, notes.bin_por.tr, NOMS_reg_por, NOMS_bin_por, ntrees_bin.por$num, ntrees_cat.por$num, ntrees_num.por$num, nk_bin.por$num, nk_cat.por$num, nk_reg.por$num,"PortuguÃ¨s")
+```
+
+```{r}
+acc_mat
+acc_por
+```
+
+### Test
+
+#### GLM
+
+```{r}
+print("MATEMÀTIQUES")
+
+pred.glm.reg_mat.te <- round(predict(mod.reg_mat, newdata=data_mat.te, type="response"))
+compute_accuracy(pred.glm.reg_mat.te, notes.num_mat.te, "reg")
+
+pred.glm.bin_mat.te <- factor(round(predict(mod.bin_mat, newdata=data_mat.te, type="response")))
+compute_accuracy(pred.glm.bin_mat.te, factor(as.numeric(notes.bin_mat.te)-1), "bin")
+
+print("PORTUGUÉS")
+
+pred.glm.reg_por.te <- round(predict(mod.reg_por, newdata=data_por.te, type="response"))
+compute_accuracy(pred.glm.reg_por.te, notes.num_por.te, "reg")
+
+pred.glm.bin_por.te <- factor(round(predict(mod.bin_por, newdata=data_por.te, type="response")))
+compute_accuracy(pred.glm.bin_por.te, factor(as.numeric(notes.bin_por.te)-1), "bin")
+```
+
+#### LDA
+
+```{r}
+adl.reg_mat.te <- lda(notes.num_mat.tr~., data=data_bin.mat.tr)
+pred.reg_mat.te <- predict(adl.reg_mat.te, newdata=data_bin.mat.te)
+
+adl.cat_mat.te <- lda(notes.cat_mat.tr~., data=data_bin.mat.tr)
+pred.cat_mat.te <- predict(adl.cat_mat.te, newdata=data_bin.mat.te)
+
+adl.bin_mat.te <- lda(notes.bin_mat.tr~., data=data_bin.mat.tr)
+pred.bin_mat.te <- predict(adl.bin_mat.te, newdata=data_bin.mat.te)
+
+adl.reg_por.te <- lda(notes.num_por.tr~., data=data_bin.por.tr)
+pred.reg_por.te <- predict(adl.reg_por.te, newdata=data_bin.por.te)
+
+adl.cat_por.te <- lda(notes.cat_por.tr~., data=data_bin.por.tr)
+pred.cat_por.te <- predict(adl.cat_por.te, newdata=data_bin.por.te)
+
+adl.bin_por.te <- lda(notes.bin_por.tr~., data=data_bin.por.tr)
+pred.bin_por.te <- predict(adl.bin_por.te, newdata=data_bin.por.te)
+
+print("MATEMÀTIQUES:")
+
+compute_accuracy(pred.reg_mat.te$class, notes.num_mat.te, "reg")
+compute_accuracy(pred.cat_mat.te$class, notes.cat_mat.te, "cat")
+compute_accuracy(pred.bin_mat.te$class, notes.bin_mat.te, "bin")
+
+print("PORTUGUÉS:")
+
+compute_accuracy(pred.reg_por.te$class, notes.num_por.te, "reg")
+compute_accuracy(pred.cat_por.te$class, notes.cat_por.te, "cat")
+compute_accuracy(pred.bin_por.te$class, notes.bin_por.te, "bin")
+```
+
+#### Naive Bayes
+
+```{r}
+model_reg.mat.te <- naiveBayes(factor(notes.num_mat.tr) ~ ., data=data_mat.tr)
+pred_nb_reg.mat.te <- predict(model_reg.mat.te, newdata= data_mat.te)
+model_cat.mat.te <- naiveBayes(notes.cat_mat.tr ~ ., data = data_mat.tr)
+pred_nb_cat.mat.te <- predict(model_cat.mat.te, newdata = data_mat.te)
+model_bin.mat.te <- naiveBayes(notes.bin_mat.tr ~ ., data = data_mat.tr)
+pred_nb_bin.mat.te <- predict(model_bin.mat.te, newdata = data_mat.te)
+
+model_reg.por.te <- naiveBayes(factor(notes.num_por.tr) ~ ., data=data_por.tr)
+pred_nb_reg.por.te <- predict(model_reg.por.te, newdata= data_por.te)
+model_cat.por.te <- naiveBayes(notes.cat_por.tr ~ ., data = data_por.tr)
+pred_nb_cat.por.te <- predict(model_cat.por.te, newdata = data_por.te)
+model_bin.por.te <- naiveBayes(notes.bin_por.tr ~ ., data = data_por.tr)
+pred_nb_bin.por.te <- predict(model_bin.por.te, newdata = data_por.te)
+
+print("MATEMÀTIQUES")
+
+compute_accuracy(pred_nb_reg.mat.te, notes.num_mat.te, "reg")
+compute_accuracy(pred_nb_cat.mat.te, notes.cat_mat.te, "cat")
+compute_accuracy(pred_nb_bin.mat.te, notes.bin_mat.te, "bin")
+
+print("PORTUGUÉS")
+
+compute_accuracy(pred_nb_reg.por.te, notes.num_por.te, "reg")
+compute_accuracy(pred_nb_cat.por.te, notes.cat_por.te, "cat")
+compute_accuracy(pred_nb_bin.por.te, notes.bin_por.te, "bin")
+```
+
+#### KNN
+
+```{r}
+knn_bin.mat.te <- knn(data_bin.mat.tr, data_bin.mat.te, notes.bin_mat.tr, k=nk_bin.mat$num)
+knn_cat.mat.te <- knn(data_bin.mat.tr, data_bin.mat.te, notes.cat_mat.tr, k=nk_cat.mat$num)
+knn_num.mat.te <- knn(data_bin.mat.tr, data_bin.mat.te, notes.num_mat.tr, k=nk_reg.mat$num)
+knn_bin.por.te <- knn(data_bin.por.tr, data_bin.por.te, notes.bin_por.tr, k=nk_bin.por$num)
+knn_cat.por.te <- knn(data_bin.por.tr, data_bin.por.te, notes.cat_por.tr, k=nk_cat.por$num)
+knn_num.por.te <- knn(data_bin.por.tr, data_bin.por.te, notes.num_por.tr, k=nk_reg.por$num)
+
+print("-> Matematiques")
+compute_accuracy(knn_num.mat.te, notes.num_mat.te, "reg")
+compute_accuracy(knn_cat.mat.te, notes.cat_mat.te, "cat")
+compute_accuracy(knn_bin.mat.te, notes.bin_mat.te, "bin")
+
+print("-> Portugues")
+compute_accuracy(knn_num.por.te, notes.num_por.te, "reg")
+compute_accuracy(knn_cat.por.te, notes.cat_por.te, "cat")
+compute_accuracy(knn_bin.por.te, notes.bin_por.te, "bin")
+```
+
+#### XARXES NEURONALS
+
+```{r}
+# matemàtiques
+pred_bin.mat.te <- as.factor(round(predict (nnet_bin.mat, newdata=data_bin.mat.te)))
+
+pred_cat.mat.te <- as.factor(max.col(round(predict (nnet_cat.mat, newdata=data_bin.mat.te))))
+
+pred_num.mat.te <- round(predict (nnet_num.mat, newdata=data_bin.mat.te))
+
+# portugués
+pred_bin.por.te <- as.factor(round(predict (nnet_bin.por, newdata=data_bin.por.te)))
+
+pred_cat.por.te <- as.factor(max.col(round(predict (nnet_cat.por, newdata=data_bin.por.te))))
+
+pred_num.por.te <- round(predict (nnet_num.por, newdata=data_bin.por.te))
+
+print("-> Matematiques")
+compute_accuracy(pred_num.mat.te, notes.num_mat.te, "reg")
+compute_accuracy(pred_cat.mat.te, factor(as.numeric(notes.cat_mat.te)), "cat")
+compute_accuracy(pred_bin.mat.te, factor(as.numeric(notes.bin_mat.te)-1), "bin")
+
+print("-> Portugués")
+compute_accuracy(pred_num.por.te, notes.num_por.te, "reg")
+compute_accuracy(pred_cat.por.te, factor(as.numeric(notes.cat_por.te)), "cat")
+compute_accuracy(pred_bin.por.te, factor(as.numeric(notes.bin_por.te)-1), "bin")
+```
+
+#### RANDOM FOREST
+
+```{r}
+pred_bin.mat <- as.factor(predict (mod.rf_bin.mat, newdata=data_mat.te, type="response"))
+pred_cat.mat <- as.factor(predict (mod.rf_cat.mat, newdata=data_mat.te, type="response"))
+pred_num.mat <- predict (mod.rf_num.mat, newdata=data_mat.te, type="response")
+
+pred_bin.por <- as.factor(predict (mod.rf_bin.por, newdata=data_por.te, type="response"))
+pred_cat.por <- as.factor(predict (mod.rf_cat.por, newdata=data_por.te, type="response"))
+pred_num.por <- predict (mod.rf_num.por, newdata=data_por.te, type="response")
+
+print("-> Matematiques")
+compute_accuracy(pred_num.mat, notes.num_mat.te, "reg")
+compute_accuracy(pred_cat.mat, notes.cat_mat.te, "cat")
+compute_accuracy(pred_bin.mat, notes.bin_mat.te, "bin")
+
+print("-> Portugués")
+compute_accuracy(pred_num.por, notes.num_por.te, "reg")
+compute_accuracy(pred_cat.por, notes.cat_por.te, "cat")
+compute_accuracy(pred_bin.por, notes.bin_por.te, "bin")
+```
+
+Importància de cada variable predictora. 
+```{r}
+varImpPlot(mod.rf_bin.mat, main="Importància de predictors sobre notes en 2 classes de Matemàtiques")
+varImpPlot(mod.rf_cat.mat, main="Importància de predictors sobre notes en 4 classes de Matemàtiques")
+varImpPlot(mod.rf_num.mat, main="Importància de predictors sobre notes numèriques de Matemàtiques")
+
+varImpPlot(mod.rf_bin.por, main="Importància de predictors sobre notes en 2 classes de Portugués")
+varImpPlot(mod.rf_cat.por, main="Importància de predictors sobre notes en 4 classes de Portugués")
+varImpPlot(mod.rf_num.por, main="Importància de predictors sobre notes numèriques de Portugués")
+```
+
+
+
